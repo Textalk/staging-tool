@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# This is the configuration for staging-tool to use when updating the
+# live servers for a specific project.
+
+# Copy this file to you project and name it staging.config. Then it
+# will be used by staging-tool automatically when invoking it in the
+# project directory.
+
+SERVERS='www1.example.com www2.example.com www3.example.com www4.example.com'
+REMOTE_USER=examplewebmaster
+LOCAL_DIR=webpages
+TARGET=/var/www/www.example.com/www-root
+VERSION_SEPARATOR='.'
+VERSION_CMD="git log -1 --format='%ad' --date=iso | sed -e 'y/ /_/ ; s/[:+]//g'"
