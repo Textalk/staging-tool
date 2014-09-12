@@ -58,6 +58,30 @@ Remote target:  /var/www/www.example.com/www-root
 Upload dir:     /var/www/www.example.com/www-root.1410540229
 ```
 
+Possible commands for generating a current version
+--------------------------------------------------
+
+Here are some suggestions for generating version names.
+
+```sh
+# The git tag of the current HEAD. Fails if there is no such tag.
+VERSION_CMD='git describe --tags --abbrev=0 --exact-match'
+
+# The same, but fails also if there are any uncommitted changes.
+VERSION_CMD='git diff --quiet HEAD && git describe --tags --abbrev=0 --exact-match'
+
+# A timestamp of the last git commit on the form YYYY-MM-DD_HHMMSS_ZZZZ.
+VERSION_CMD="git log -1 --format='%ad' --date=iso | sed -e 'y/ /_/ ; s/[:+]//g'"
+
+# The last modification timestamp of the current directory in seconds since the
+# epoch.
+VERSION_CMD='stat --format=%Y .'
+
+# The last modification timestamp of the current directory on the form
+# YYYY-MM-DD_HHMMSS_ZZZZ
+VERSION_CMD="stat --format=%y . | sed 's/\..*//; s/ /_/; s/://g'"
+```
+
 Use ssh-agent
 -------------
 
@@ -80,7 +104,7 @@ with staging-tool or set the `ID_FILE` environment variable.
 When you're done, do `ssh-agent -k` to kill the current ssh-agent.
 
 Wishlist
----------
+--------
 
 * Use rsync instead of scp
 * Possibility to specify rsync options in the configuration
