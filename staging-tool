@@ -123,7 +123,7 @@ case "$1" in
         echo -e "Version:\t$VERSION"
         echo -e "Local dir:\t$LOCAL_DIR"
         echo -e "Remote hosts:\t$SERVERS"
-        echo -e "Remote user:\t$USER"
+        echo -e "Remote user:\t$REMOTE_USER"
         echo -e "Remote target:\t$TARGET"
         echo -e "Upload dir:\t$TARGET$VERSION_SEPARATOR$VERSION"
         ;;
@@ -133,7 +133,8 @@ case "$1" in
         VERSION_GLOB="$SYMLINK$VERSION_SEPARATOR*"
         for server in $SERVERS ; do
             echo "Server: $server"
-            ssh $SSH_OPTS $USER@$server "cd '$DIR' ; echo Active version: \`readlink '$SYMLINK'\` ; ls -ldt $VERSION_GLOB"
+            ssh $SSH_OPTS $REMOTE_USER@$server \
+                "cd '$DIR' ; echo Active version: \`readlink '$SYMLINK'\` ; ls -ldt $VERSION_GLOB"
             echo
         done
         ;;
@@ -141,14 +142,15 @@ case "$1" in
         VERSION_DIR="$TARGET$VERSION_SEPARATOR$VERSION"
         for server in $SERVERS ; do
             echo "Server: $server"
-            scp $SSH_OPTS -r "$LOCAL_DIR" "$USER@$server:$VERSION_DIR"
+            scp $SSH_OPTS -r "$LOCAL_DIR" "$REMOTE_USER@$server:$VERSION_DIR"
         done
         ;;
     check)
         VERSION_DIR="$TARGET$VERSION_SEPARATOR$VERSION"
         for server in $SERVERS ; do
             echo "Server $server"
-            ssh $SSH_OPTS $USER@$server "if [ -d '$VERSION_DIR' ] ; then echo ok ; else echo FAIL ; fi"
+            ssh $SSH_OPTS $REMOTE_USER@$server \
+                "if [ -d '$VERSION_DIR' ] ; then echo ok ; else echo FAIL ; fi"
         done
         ;;
     activate)
@@ -157,7 +159,9 @@ case "$1" in
         UPDLOAD="$SYMLINK$VERSION_SEPARATOR$VERSION"
         for server in $SERVERS ; do
             echo "Activating $UPLOAD on server $server."
-            ssh $SSH_OPTS "$USER@$server" "cd '$DIR' ; if [ -d '$UPDLOAD' ] ; then ln -sTf '$UPDLOAD' '$SYMLINK' ; echo ok ; else echo FAIL ; fi"
+            CMD=
+            ssh $SSH_OPTS $REMOTE_USER@$server \
+                "cd '$DIR' ; if [ -d '$UPDLOAD' ] ; then ln -sTf '$UPDLOAD' '$SYMLINK' ; echo ok ; else echo FAIL ; fi"
         done
         ;;
     *)
