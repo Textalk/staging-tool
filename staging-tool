@@ -1,0 +1,166 @@
+#!/bin/bash
+# stating-tool -- A script for publishing to multiple servers using SSH
+# Copyright (C) 2014  Textalk AB
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#----------------------------------------------------------------------
+
+help() {
+	cat <<END_OF_HELP
+Usage: $0 [OPTIONS] [COMMAND]
+
+Commands:
+
+  info               Print current version and configuration
+  list               List existing versions on the servers
+  upload             Upload the current version to the servers
+  check              Check whether the current version is uploaded to the
+                     servers
+  activate           Activate the current version on the servers
+
+Options:
+
+  -f FILE            Include configuration file
+  -h                 Help
+  -i ID_FILE         Identity file for SSH to use instead of its default
+  -v VERSION         Use VERSION instead of the default current version
+
+Much of the operation is controlled using environment variables.
+These can be set either in the shell or in a separate file that is
+specified using the -f option. If a file called staging.config exists
+in the current directory, this is used by default.
+
+Environment variables:
+
+  SERVERS            A space-separated list of servers (host names or IP
+                     addresses)
+  REMOTE_USER        Username to use on the servers when SSH'ing to them.
+  VERSION            The version to use when activating a version (or any other
+                     operation). By default, VERSION_CMD is invoked and its
+                     output is used as the version.
+  VERSION_CMD        Command do determine the current version. Defaults to a
+                     command finding the timestamp of the last git commit in the
+                     current git repository.
+  LOCAL_DIR          Local directory to upload when uploading the current
+                     version.
+  TARGET             Target directory on the servers. When activating a version,
+                     the target will become a symlink to the directory
+                     containing the uploaded files for the version.
+  VERSION_SEPARATOR  The separator to use when constructing the name of an
+                     upload directory. This is '.' by default.
+END_OF_HELP
+}
+
+while [[ "$1" =~ ^-{1,2}.* ]]; do
+    opt="$1" ; shift
+    case $opt in
+        -f|--file)    STAGING_CONFIG="$1"; shift;;
+        -h|--help)    help; exit;;
+        -v|--version) VERSION="$1"; shift;;
+        *)            echo "Bad option $opt"; exit -1;;
+    esac
+done
+
+if [[ "$#" == "0" ]] ; then
+    echo "Usage: $0 [OPTIONS] [COMMAND]"
+    echo
+    echo "Try --help for help."
+    exit -1
+fi
+if [[ "$1" == "" ]]; then echo "Command missing."; fi
+
+# Staging config file
+if [ "$STAGING_CONFIG" == "" ] ; then
+    [[ -f staging.config ]] && source staging.config
+elif [ -f "$STAGING_CONFIG" ] ; then
+    source "$STAGING_CONFIG"
+else
+    echo "Config file not found: $STAGING_CONFIG"
+    exit -1
+fi
+
+# Username on the remote servers
+if [ "$REMOTE_USER" == "" ] ; then echo "No REMOTE_USER" ; exit -1 ; fi
+
+# The local directory to upload when uploading the current version
+if [[ "$LOCAL_DIR" == "" || ! -d "$LOCAL_DIR" ]] ; then echo "No or bad LOCAL_DIR" ; exit -1 ; fi
+
+# The target which will be a symlink to the directory containing the uploaded files on activation
+if [ "$TARGET" == "" ] ; then echo "No TARGET" ; exit -1 ; fi
+
+# Target.version separator for upload directories (e.g. the dot in www.2014-09-09_180340_0200)
+if [ "$VERSION_SEPARATOR" == "" ] ; then VERSION_SEPARATOR='.' ; fi
+
+# Servers, space-separated
+if [ "$SERVERS" == "" ] ; then echo "No SERVERS" ; exit -1 ; fi
+
+# Default version command, last git commit timestamp on the form 2014-09-09_180340_0200 by default.
+if [ "$VERSION_CMD" == "" ] ; then
+    VERSION_CMD="git log -1 --format='%ad' --date=iso | sed -e 'y/ /_/ ; s/[:+]//g'"
+fi
+
+# If no version is specified, the current version is determined using the VERSION_CMD.
+if [ "$VERSION" == "" ] ; then VERSION=`bash -c "$VERSION_CMD"` ; fi
+
+if [ "$ID_FILE" != "" ] then
+    SSH_OPTS="$SSH_OPTS -i $ID_FILE"
+fi
+
+COMMAND="$1"
+case "$1" in
+    info)
+        echo -e "Version:\t$VERSION"
+        echo -e "Local dir:\t$LOCAL_DIR"
+        echo -e "Remote hosts:\t$SERVERS"
+        echo -e "Remote user:\t$USER"
+        echo -e "Remote target:\t$TARGET"
+        echo -e "Upload dir:\t$TARGET$SEPARATOR$VERSION"
+        ;;
+    list)
+        DIR=`dirname "$TARGET"`
+        SYMLINK=`basename "$TARGET"`
+        VERSION_GLOB="$SYMLINK$VERSION_SEPARATOR*"
+        for server in $SERVERS ; do
+            echo "Server: $server"
+            ssh $SSH_OPTS $USER@$server "cd '$DIR' ; echo Active version: \`readlink '$SYMLINK'\` ; ls -ldt $VERSION_GLOB"
+            echo
+        done
+        ;;
+    upload)
+        VERSION_DIR="$TARGET$VERSION_SEPARATOR$VERSION"
+        for server in $SERVERS ; do
+            echo "Server: $server"
+            scp $SSH_OPTS -r "$LOCAL_DIR" "$USER@$server:$VERSION_DIR"
+        done
+        ;;
+    check)
+        VERSION_DIR="$TARGET$VERSION_SEPARATOR$VERSION"
+        for server in $SERVERS ; do
+            echo "Server $server"
+            ssh $SSH_OPTS $USER@$server "if [ -d '$VERSION_DIR' ] ; then echo ok ; else echo FAIL ; fi"
+        done
+        ;;
+    activate)
+        DIR=`dirname "$TARGET"`
+        SYMLINK=`basename "$TARGET"`
+        UPDLOAD="$SYMLINK$VERSION_SEPARATOR$VERSION"
+        for server in $SERVERS ; do
+            echo "Activating $UPLOAD on server $server."
+            ssh $SSH_OPTS "$USER@$server" "cd '$DIR' ; if [ -d '$UPDLOAD' ] ; then ln -sTf '$UPDLOAD' '$SYMLINK' ; echo ok ; else echo FAIL ; fi"
+        done
+        ;;
+    *)
+        echo "Invalid command '$COMMAND'"
+        ;;
+esac
