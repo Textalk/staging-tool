@@ -111,7 +111,16 @@ if [ "$VERSION_CMD" == "" ] ; then
 fi
 
 # If no version is specified, the current version is determined using the VERSION_CMD.
-if [ "$VERSION" == "" ] ; then VERSION=`bash -c "$VERSION_CMD"` ; fi
+if [ "$VERSION" == "" ] ; then
+    VERSION=`bash -c "$VERSION_CMD"`
+    if [[ $? -ne 0 ]] ; then
+        echo "Error detecting current version." > /dev/stderr
+        exit -1
+    elif [[ "$VERSION" == "" ]] ; then
+        echo "The version command returned no output." > /dev/stderr
+        exit -1
+    fi
+fi
 
 if [ "$ID_FILE" != "" ]; then
     SSH_OPTS="$SSH_OPTS -i $ID_FILE"
