@@ -113,7 +113,7 @@ fi
 # If no version is specified, the current version is determined using the VERSION_CMD.
 if [ "$VERSION" == "" ] ; then VERSION=`bash -c "$VERSION_CMD"` ; fi
 
-if [ "$ID_FILE" != "" ] then
+if [ "$ID_FILE" != "" ]; then
     SSH_OPTS="$SSH_OPTS -i $ID_FILE"
 fi
 
@@ -125,7 +125,7 @@ case "$1" in
         echo -e "Remote hosts:\t$SERVERS"
         echo -e "Remote user:\t$USER"
         echo -e "Remote target:\t$TARGET"
-        echo -e "Upload dir:\t$TARGET$SEPARATOR$VERSION"
+        echo -e "Upload dir:\t$TARGET$VERSION_SEPARATOR$VERSION"
         ;;
     list)
         DIR=`dirname "$TARGET"`
