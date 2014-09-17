@@ -169,9 +169,19 @@ case "$1" in
         UPDLOAD="$SYMLINK$VERSION_SEPARATOR$VERSION"
         for server in $SERVERS ; do
             echo "Activating $UPLOAD on server $server."
-            CMD=
             ssh $SSH_OPTS $REMOTE_USER@$server \
                 "cd '$DIR' ; if [ -d '$UPDLOAD' ] ; then ln -sTf '$UPDLOAD' '$SYMLINK' ; echo ok ; else echo FAIL ; fi"
+        done
+        ;;
+    ssh)
+        DIR=`dirname "$TARGET"`
+        cmd="cd $DIR ; " ;
+        while [ "$2" != "" ] ; do
+            cmd="$cmd $2" ; shift
+        done
+        for server in $SERVERS ; do
+            echo "Executing commands on $server."
+            ssh $SSH_OPTS $REMOTE_USER@$server $cmd
         done
         ;;
     *)
