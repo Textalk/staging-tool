@@ -65,10 +65,11 @@ END_OF_HELP
 while [[ "$1" =~ ^-{1,2}.* ]]; do
     opt="$1" ; shift
     case $opt in
-        -f|--file)    STAGING_CONFIG="$1"; shift;;
-        -h|--help)    help; exit;;
-        -v|--version) VERSION="$1"; shift;;
-        *)            echo "Bad option $opt"; exit -1;;
+        -f|--file)     STAGING_CONFIG="$1"; shift;;
+        -h|--help)     help; exit;;
+        -i|--identity) ID_FILE="$1"; shift;;
+        -v|--version)  VERSION="$1"; shift;;
+        *)             echo "Bad option $opt"; exit -1;;
     esac
 done
 
