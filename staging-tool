@@ -1,5 +1,5 @@
 #!/bin/bash
-# stating-tool -- A script for publishing to multiple servers using SSH
+# staging-tool -- A script for publishing to multiple servers using SSH
 # Copyright (C) 2014  Textalk AB
 #
 # This program is free software: you can redistribute it and/or modify

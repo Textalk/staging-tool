@@ -85,8 +85,8 @@ VERSION_CMD="stat --format=%y . | sed 's/\..*//; s/ /_/; s/://g'"
 Use ssh-agent
 -------------
 
-Since this script make one, sometimes two, ssh connections to each server on
-every command, it is useful to start `ssh-agent`. This lets you to type your
+Since this script makes one, sometimes two, ssh connections to each server on
+every command, it is useful to start `ssh-agent`. This lets you type your
 password only once.
 
 ```sh

@@ -3,7 +3,7 @@
 # This is the configuration for staging-tool to use when updating the
 # live servers for a specific project.
 
-# Copy this file to you project and name it staging.config. Then it
+# Copy this file to your project and name it staging.config. Then it
 # will be used by staging-tool automatically when invoking it in the
 # project directory.
 
